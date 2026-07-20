@@ -163,11 +163,13 @@ ls -la ~/.agents/skills/code-path/SKILL.md
 
 ## Agent note (Claude / Cursor / Codex)
 
-Agent shells usually have **no interactive TTY**, so a plain in-process TUI cannot run there.
+**Default UX is in-session:** the skill shows one hop at a time in chat and uses **AskUserQuestion** (Claude) / AskQuestion (Cursor) / numbered choices (Codex) for Next / Prev / More context / Branch / Done.
 
-`codepath view <file>` **detects that and opens an external terminal window** with the walkthrough. Prefer that over telling the user to copy-paste a command.
+Claude cannot host a raw-mode TUI inside the tool loop — that is why other plugins feel “interactive inside Claude”: they use structured questions, not an embedded terminal.
 
-Override emulator: `export CODEPATH_TERMINAL='kitty -e {cmd}'`
+`codepath view` remains available when you explicitly want an external terminal TUI.
+
+`codepath show <file> --step s1` prints a single hop for the agent to display.
 
 ---
 

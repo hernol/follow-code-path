@@ -15,6 +15,7 @@ import {
   isInteractiveTty,
   spawnInExternalTerminal,
 } from "./terminal.js";
+import { findStep, showStep } from "./show.js";
 
 const program = new Command();
 
@@ -186,6 +187,48 @@ program
         console.error(chalk.red(message));
         process.exitCode = 1;
       }
+    },
+  );
+
+program
+  .command("show")
+  .description("Print a single hop (for in-chat walkthroughs)")
+  .argument("<file>", "Path Document JSON file")
+  .requiredOption(
+    "-s, --step <idOrNumber>",
+    "Step id (e.g. s1) or 1-based step number",
+  )
+  .option("--repo-root <dir>", "Override repoRoot from the document")
+  .option("-c, --context <n>", "Context lines around the range", "3")
+  .action(
+    (
+      file: string,
+      opts: { step: string; repoRoot?: string; context: string },
+    ) => {
+      const loaded = loadPathDocument(file);
+      if (!loaded.doc || loaded.issues.length > 0) {
+        printIssues(loaded.issues);
+        process.exitCode = 1;
+        return;
+      }
+      const step = findStep(loaded.doc, opts.step);
+      if (!step) {
+        console.error(chalk.red(`unknown step: ${opts.step}`));
+        process.exitCode = 1;
+        return;
+      }
+      const repoRoot = resolveRepoRoot(
+        loaded.doc,
+        loaded.absolutePath,
+        opts.repoRoot,
+      );
+      const context = Number.parseInt(opts.context, 10);
+      if (Number.isNaN(context) || context < 0) {
+        console.error(chalk.red("invalid --context"));
+        process.exitCode = 1;
+        return;
+      }
+      showStep(loaded.doc, step, repoRoot, context);
     },
   );
 

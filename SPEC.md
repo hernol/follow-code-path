@@ -125,9 +125,21 @@ JSON file. JSON Schema lives at [`schemas/path-document.schema.json`](schemas/pa
 
 See [`examples/sample-path.json`](examples/sample-path.json).
 
-## 7. TUI UX
+## 7. Presentation modes
 
-### Layout (each hop)
+### In-session walk (default for agents)
+
+Primary UX inside Claude Code / Cursor / Codex:
+
+1. Show one hop (header + note + code).
+2. Ask the user what to do next via **AskUserQuestion** (Claude), **AskQuestion** (Cursor), or numbered chat options (Codex).
+3. Repeat until Done.
+
+This is how interactive plugins work inside Claude: structured choices in the session, not an embedded raw-mode TUI.
+
+### External TUI (optional)
+
+`codepath view` for a classic terminal walker. When stdin is not a TTY, spawn an external emulator unless `--here` is set.
 
 ```
 codepath │ Checkout: place order                    Step 3/12
@@ -175,8 +187,8 @@ j/n next  k/p prev  +/- context  c more  o open  b branch  g jump  y yank  q qui
 
 ### TTY behavior
 
-- `codepath view` requires a TTY. If not a TTY, exit non-zero and suggest `codepath print`.
-- Agents without a TTY write the Path Document and tell the user to run `codepath view <file>`.
+- In-session walk does not need a TTY.
+- `codepath view` without a TTY opens an external terminal by default; use `--here` to require the current TTY.
 
 ## 8. CLI surface
 
@@ -184,16 +196,18 @@ j/n next  k/p prev  +/- context  c more  o open  b branch  g jump  y yank  q qui
 codepath <command>
 
 codepath validate <file> [--check-files] [--repo-root <dir>]
+codepath show     <file> --step <id|N> [--context <n>]
 codepath print    <file> [--repo-root <dir>] [--context <n>]
-codepath view     <file> [--repo-root <dir>] [--context <n>]
+codepath view     <file> [--repo-root <dir>] [--context <n>] [--here|--external]
 codepath init     [title]   # writes a stub Path Document to stdout or .codepath/
 ```
 
 | Command | Purpose |
 |---------|---------|
 | `validate` | Schema + graph integrity; optional file/line checks |
+| `show` | Single hop for in-chat walkthroughs |
 | `print` | Sequential diff-style dump to stdout |
-| `view` | Interactive TUI |
+| `view` | Optional external/interactive TUI |
 | `init` | Stub document for agents / manual starts |
 
 Exit codes: `0` success, `1` validation/usage error, `2` I/O error.
@@ -206,15 +220,16 @@ Install:
 
 - Cursor: symlink/copy to `~/.cursor/skills/code-path`
 - Claude Code: symlink/copy to `~/.claude/skills/code-path`
+- Codex: `~/.agents/skills/code-path`
 
 ### Agent steps
 
 1. Clarify entry point / success vs error path if ambiguous.
 2. Search and read code; reconstruct the **actual** control/call path.
 3. Build steps with real `file` / line ranges / `symbol` / `note`.
-4. `codepath validate --check-files` on the document; fix until valid.
-5. Write to `.codepath/<slug>.json` (recommend gitignoring `.codepath/`).
-6. If TTY: `codepath view .codepath/<slug>.json`. Else: tell user to run that command; optionally `codepath print` into the chat as a fallback summary.
+4. Write to `.codepath/<slug>.json`; `codepath validate --check-files`.
+5. **Walk in-session**: show one hop, then AskUserQuestion (Next/Prev/More context/Branch/Done).
+6. Only if the user asks for a terminal UI: `codepath view`.
 
 ### Triggers
 

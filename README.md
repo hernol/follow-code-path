@@ -56,8 +56,8 @@ codepath init "Checkout place order" --query "What happens on Place Order?"
 
 1. You ask: “Walk me through what happens when a user clicks Place Order.”
 2. The **code-path** skill searches the repo and writes `.codepath/<slug>.json`.
-3. It runs `codepath validate --check-files`, then `codepath view` — which opens an external terminal when the agent has no TTY.
-4. You navigate the path in the TUI.
+3. It validates, then **walks hop-by-hop inside the chat** (AskUserQuestion / choices: Next, Prev, More context, Branch, Done).
+4. Optional: `codepath view` opens an external TUI if you ask for a terminal UI.
 
 ### Example Path Document shape
 
