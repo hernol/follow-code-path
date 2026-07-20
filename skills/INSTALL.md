@@ -161,20 +161,13 @@ ls -la ~/.agents/skills/code-path/SKILL.md
 
 ---
 
-## 5. Verify end-to-end
+## Agent note (Claude / Cursor / Codex)
 
-In any of the three agents, inside a real project:
+Agent shells usually have **no interactive TTY**, so a plain in-process TUI cannot run there.
 
-1. Ask: “Walk me through what happens when \<X\>, using code-path.”
-2. Expect a file under `.codepath/<slug>.json`.
-3. Run (or let the agent run):
+`codepath view <file>` **detects that and opens an external terminal window** with the walkthrough. Prefer that over telling the user to copy-paste a command.
 
-```bash
-codepath validate .codepath/<slug>.json --check-files
-codepath view .codepath/<slug>.json
-```
-
-If the agent has no TTY, run `codepath view …` yourself in a normal terminal.
+Override emulator: `export CODEPATH_TERMINAL='kitty -e {cmd}'`
 
 ---
 

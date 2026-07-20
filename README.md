@@ -41,10 +41,11 @@ Validate and print the bundled sample:
 ```bash
 codepath validate examples/sample-path.json --check-files
 codepath print examples/sample-path.json
-codepath view examples/sample-path.json    # interactive (needs a TTY)
+codepath view examples/sample-path.json    # interactive (opens external terminal if no TTY)
+codepath view --here examples/sample-path.json  # force current terminal
 ```
 
-Create a stub for a new walkthrough:
+Agent shells (Claude/Cursor/Codex) typically have no TTY. Plain `codepath view` still works: it spawns kitty/gnome-terminal/Terminal.app/etc. Set `CODEPATH_TERMINAL='kitty -e {cmd}'` if auto-detect fails.
 
 ```bash
 codepath init "Checkout place order" --query "What happens on Place Order?"
@@ -55,7 +56,7 @@ codepath init "Checkout place order" --query "What happens on Place Order?"
 
 1. You ask: “Walk me through what happens when a user clicks Place Order.”
 2. The **code-path** skill searches the repo and writes `.codepath/<slug>.json`.
-3. It runs `codepath validate --check-files`, then `codepath view` (or tells you to).
+3. It runs `codepath validate --check-files`, then `codepath view` — which opens an external terminal when the agent has no TTY.
 4. You navigate the path in the TUI.
 
 ### Example Path Document shape

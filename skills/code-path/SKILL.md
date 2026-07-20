@@ -28,15 +28,15 @@ Help the user **see** the real hop-by-hop path code takes for a feature or event
    codepath validate .codepath/<slug>.json --check-files
    ```
    Fix any issues (missing files, bad line ranges, unknown `next` ids) before continuing.
-5. **Present**:
-   - If a TTY is available for the user: run
-     ```bash
-     codepath view .codepath/<slug>.json
-     ```
-   - Otherwise tell the user to run that command locally, and optionally show a summary with:
-     ```bash
-     codepath print .codepath/<slug>.json
-     ```
+5. **Open the interactive walker** (always do this — do not stop at “run this yourself”):
+   ```bash
+   codepath view .codepath/<slug>.json
+   ```
+   Agents usually have **no TTY**. `codepath view` detects that and **opens a real terminal window** (kitty, gnome-terminal, Terminal.app, etc.) with the TUI. Tell the user that a walkthrough window was opened and remind them of keys: `j`/`n` next, `k`/`p` prev, `+/-` context, `o` open, `b` branch, `q` quit.
+
+   Only if that command fails (exit non-zero / could not spawn a terminal):
+   - Run `codepath print .codepath/<slug>.json` into the chat as a fallback summary.
+   - Then tell them: `codepath view --here .codepath/<slug>.json` in their own terminal, or set `CODEPATH_TERMINAL` (e.g. `kitty -e {cmd}`).
 
 ## Path Document rules
 
@@ -58,7 +58,9 @@ codepath init "Checkout place order" --query "What happens on Place Order?"
 |---------|---------|
 | `codepath validate <file> [--check-files]` | Schema + graph (+ file) checks |
 | `codepath print <file>` | Non-interactive sequential walkthrough |
-| `codepath view <file>` | Interactive TUI (requires TTY) |
+| `codepath view <file>` | TUI; auto-opens external terminal when no TTY |
+| `codepath view --here <file>` | Force TUI in the current terminal |
+| `codepath view --external <file>` | Always spawn an external terminal |
 | `codepath init [title]` | Stub document under `.codepath/` |
 
 ## TUI keys (tell the user)
@@ -73,4 +75,5 @@ If `codepath` is missing on PATH, install/link this package from the code-path-s
 
 - Invent hops that are not in the codebase.
 - Emit a Path Document without validating when `codepath` is available.
+- Stop after writing the JSON and only print “run `codepath view` locally” — always invoke `codepath view` yourself so it can spawn the external terminal.
 - Attach a live debugger or claim runtime certainty for unresolved dynamic calls.

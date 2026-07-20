@@ -59,7 +59,7 @@ export async function runView(
 ): Promise<void> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error(
-      "codepath view requires a TTY. Use `codepath print <file>` instead.",
+      "codepath view --here requires a TTY. Use `codepath view <file>` (opens an external terminal) or run inside a real terminal.",
     );
   }
 

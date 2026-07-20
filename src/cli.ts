@@ -10,6 +10,11 @@ import {
 import { printPathDocument } from "./print.js";
 import { runView } from "./tui/view.js";
 import { buildStubDocument, writeStubToCodepathDir } from "./init.js";
+import {
+  buildViewArgv,
+  isInteractiveTty,
+  spawnInExternalTerminal,
+} from "./terminal.js";
 
 const program = new Command();
 
@@ -84,12 +89,32 @@ program
 
 program
   .command("view")
-  .description("Interactive TUI walkthrough (requires a TTY)")
+  .description(
+    "Interactive TUI walkthrough (opens an external terminal when stdin is not a TTY)",
+  )
   .argument("<file>", "Path Document JSON file")
   .option("--repo-root <dir>", "Override repoRoot from the document")
   .option("-c, --context <n>", "Initial context lines around each range", "3")
+  .option(
+    "--here",
+    "Force TUI in this process (do not spawn an external terminal)",
+    false,
+  )
+  .option(
+    "--external",
+    "Always open an external terminal, even if this process has a TTY",
+    false,
+  )
   .action(
-    async (file: string, opts: { repoRoot?: string; context: string }) => {
+    async (
+      file: string,
+      opts: {
+        repoRoot?: string;
+        context: string;
+        here: boolean;
+        external: boolean;
+      },
+    ) => {
       const loaded = loadPathDocument(file);
       if (!loaded.doc || loaded.issues.length > 0) {
         printIssues(loaded.issues);
@@ -107,6 +132,53 @@ program
         process.exitCode = 1;
         return;
       }
+
+      const wantExternal =
+        opts.external ||
+        (!opts.here && !isInteractiveTty());
+
+      if (wantExternal) {
+        const argv = buildViewArgv(file, {
+          repoRoot: opts.repoRoot,
+          context: opts.context,
+        });
+        const spawned = spawnInExternalTerminal(argv);
+        if (spawned.ok) {
+          console.log(
+            chalk.green(
+              `Opened interactive walkthrough in ${spawned.label}.`,
+            ),
+          );
+          console.log(chalk.dim(`Path document: ${resolve(file)}`));
+          console.log(
+            chalk.dim(
+              "Keys: j/n next · k/p prev · +/- context · o open · b branch · q quit",
+            ),
+          );
+          return;
+        }
+        console.error(
+          chalk.yellow(
+            `Could not open an external terminal (${spawned.reason}).`,
+          ),
+        );
+        if (!isInteractiveTty()) {
+          console.error(
+            chalk.yellow(
+              `Run locally: codepath view --here ${resolve(file)}`,
+            ),
+          );
+          console.error(
+            chalk.dim(
+              "Tip: set CODEPATH_TERMINAL to your emulator, e.g. 'kitty -e {cmd}'",
+            ),
+          );
+          process.exitCode = 1;
+          return;
+        }
+        // Fall through to in-process TUI if we somehow have a TTY.
+      }
+
       try {
         await runView(loaded.doc, { repoRoot, context });
       } catch (err) {
