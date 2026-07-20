@@ -1,8 +1,17 @@
 # codepath
 
-Interactive **code path** walker for humans who did not write (or no longer remember) the call chain. Cursor, Claude Code, and Codex reconstruct a feature’s static path into a Path Document; you walk it hop-by-hop in the terminal — file, lines, and code — with keybindings for context, branches, and open-in-editor.
+Interactive **code path** walker. Inside Claude/Cursor/Codex the default is hop-by-hop in the session (**AskUserQuestion** after every step). Optional external TUI via `codepath view`.
 
-See [SPEC.md](SPEC.md) for the full product and technical spec.
+See [SPEC.md](SPEC.md). Install details: [skills/INSTALL.md](skills/INSTALL.md).
+
+### Claude: use the slash command
+
+```bash
+mkdir -p ~/.claude/commands
+ln -sfn "$(pwd)/commands/code-path.md" ~/.claude/commands/code-path.md
+```
+
+Then: `/code-path <what to trace>` — expect one hop + a Next/Prev picker, not a full dump.
 
 ## Install
 

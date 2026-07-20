@@ -161,6 +161,32 @@ ls -la ~/.agents/skills/code-path/SKILL.md
 
 ---
 
+## Slash command (Claude Code) — recommended
+
+Skills alone are easy for the model to “summarize and finish.” A **slash command** forces the interactive loop.
+
+```bash
+mkdir -p ~/.claude/commands
+ln -sfn /data/apps/code-path-skill/commands/code-path.md ~/.claude/commands/code-path.md
+```
+
+In a project:
+
+```bash
+mkdir -p .claude/commands
+ln -sfn /data/apps/code-path-skill/commands/code-path.md .claude/commands/code-path.md
+```
+
+Then in Claude:
+
+```text
+/code-path brands import when Excel is uploaded
+```
+
+You should get **one hop** and an **AskUserQuestion** picker (Next / Prev / …). If you only get a wall of files, the session is still on an old prompt — start a **new** Claude session and use `/code-path`.
+
+---
+
 ## Agent note (Claude / Cursor / Codex)
 
 **Default UX is in-session:** the skill shows one hop at a time in chat and uses **AskUserQuestion** (Claude) / AskQuestion (Cursor) / numbered choices (Codex) for Next / Prev / More context / Branch / Done.
