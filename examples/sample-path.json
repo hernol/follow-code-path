@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "title": "Checkout: place order",
+  "query": "What happens when a user clicks Place Order?",
+  "repoRoot": ".",
+  "createdAt": "2026-07-20T17:00:00.000Z",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "UI click handler",
+      "file": "examples/fixture-repo/Checkout.tsx",
+      "startLine": 5,
+      "endLine": 21,
+      "symbol": "onPlaceOrder",
+      "note": "User clicks Place Order; client validates the cart id then POSTs to the API.",
+      "next": ["s2"]
+    },
+    {
+      "id": "s2",
+      "title": "HTTP route entry",
+      "file": "examples/fixture-repo/orders-route.ts",
+      "startLine": 13,
+      "endLine": 20,
+      "symbol": "postOrders",
+      "note": "API route receives the request and delegates to createOrder.",
+      "next": ["s3"],
+      "branches": [
+        {
+          "label": "unauthorized",
+          "next": "s5"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "title": "Create order service",
+      "file": "examples/fixture-repo/create-order.ts",
+      "startLine": 12,
+      "endLine": 24,
+      "symbol": "createOrder",
+      "note": "Parses body, loads cart, persists order row, returns the order DTO.",
+      "next": ["s4"],
+      "branches": [
+        {
+          "label": "validation error",
+          "next": "s6"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "title": "Persist order",
+      "file": "examples/fixture-repo/orders-db.ts",
+      "startLine": 8,
+      "endLine": 11,
+      "symbol": "insertOrder",
+      "note": "Database insert for the new order; end of the happy path."
+    },
+    {
+      "id": "s5",
+      "title": "Unauthorized response",
+      "file": "examples/fixture-repo/orders-route.ts",
+      "startLine": 23,
+      "endLine": 25,
+      "symbol": "unauthorized",
+      "note": "Branch: missing/invalid session returns 401 without calling createOrder."
+    },
+    {
+      "id": "s6",
+      "title": "Validation failure",
+      "file": "examples/fixture-repo/create-order.ts",
+      "startLine": 39,
+      "endLine": 43,
+      "symbol": "validationError",
+      "note": "Branch: schema parse failure maps to a 400 response."
+    }
+  ]
+}

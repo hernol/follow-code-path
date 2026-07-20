@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/local/code-path-skill/schemas/path-document.schema.json",
+  "title": "Code Path Document",
+  "description": "A versioned description of static code hops for interactive walkthroughs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "title", "query", "repoRoot", "steps"],
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Schema version. Only 1 is supported in v1."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short human title for the walkthrough."
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Original user question or intent."
+    },
+    "repoRoot": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repository root relative to which step file paths resolve."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when the document was generated."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "file", "startLine", "endLine", "note"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique step id within the document."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path relative to repoRoot."
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Function, class, or method name if known."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this hop is next; include uncertainty here."
+        },
+        "next": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Default successor step ids."
+        },
+        "branches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/branch" }
+        }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "next"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Step id to jump to."
+        }
+      }
+    }
+  }
+}

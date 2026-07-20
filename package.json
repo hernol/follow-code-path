@@ -1,0 +1,38 @@
+{
+  "name": "codepath",
+  "version": "1.0.0",
+  "description": "Interactive code-path walker for Cursor Agent and Claude Code",
+  "type": "module",
+  "bin": {
+    "codepath": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "codepath": "tsx src/cli.ts",
+    "prepare": "npm run build",
+    "test": "tsx src/cli.ts validate examples/sample-path.json --check-files"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "codepath",
+    "code-path",
+    "walkthrough",
+    "tui",
+    "cursor",
+    "claude"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
