@@ -1,210 +1,106 @@
 # Install code-path on Cursor, Claude Code, and Codex
 
-Two pieces:
+Replace `/data/apps/code-path-skill` with your clone path if different (e.g. `follow-code-path`).
 
-1. **`codepath` CLI** — interactive walker (`validate` / `print` / `view`)
-2. **`code-path` skill** — same `SKILL.md` for all three agents (symlinked or copied into each agent’s skills folder)
-
-Replace `/data/apps/code-path-skill` with your clone path if different.
-
----
-
-## 0. Install the CLI (once, shared)
+## 0. CLI (once)
 
 ```bash
 cd /data/apps/code-path-skill
 npm install
 npm link
-codepath --help
-```
-
-Confirm:
-
-```bash
 codepath validate examples/sample-path.json --check-files
 ```
 
-Agents need `codepath` on your `PATH`. If `npm link` is awkward in your environment:
+## 1. Claude Code (chat debugger — primary)
+
+### Skill + slash commands
 
 ```bash
-# optional: add an alias in ~/.bashrc or ~/.zshrc
-alias codepath='npx tsx /data/apps/code-path-skill/src/cli.ts'
+REPO=/data/apps/code-path-skill
+mkdir -p ~/.claude/skills ~/.claude/commands
+ln -sfn "$REPO/skills/code-path" ~/.claude/skills/code-path
+for c in code-path cp-n cp-b cp-i cp-o cp-s cp-q; do
+  ln -sfn "$REPO/commands/$c.md" ~/.claude/commands/$c.md
+done
 ```
 
----
+Project-scoped (from a repo root):
 
-## 1. Cursor
+```bash
+mkdir -p .claude/skills .claude/commands
+ln -sfn /data/apps/code-path-skill/skills/code-path .claude/skills/code-path
+for c in code-path cp-n cp-b cp-i cp-o cp-s cp-q; do
+  ln -sfn /data/apps/code-path-skill/commands/$c.md .claude/commands/$c.md
+done
+```
 
-**Personal (all projects):**
+### Use
+
+1. **New Claude session** (so it loads the updated skill/commands).
+2. `/code-path <feature>`
+3. You should see **one hop** and:
+   `> n next · b back · i into · o out · s over · q quit`
+4. Type `n` + Enter (or `/cp-n`).
+
+### Optional keybindings
+
+Claude **cannot** bind `"f10": "n\n"` (invalid schema). Use slash-command bindings:
+
+```bash
+# merge into ~/.claude/keybindings.json — see examples/keybindings.code-path.json
+```
+
+Example fragment:
+
+```json
+{
+  "bindings": [
+    {
+      "context": "Chat",
+      "bindings": {
+        "f10": "command:cp-n",
+        "shift+f10": "command:cp-b",
+        "f11": "command:cp-i",
+        "shift+f11": "command:cp-o",
+        "f8": "command:cp-s"
+      }
+    }
+  ]
+}
+```
+
+## 2. Cursor
 
 ```bash
 mkdir -p ~/.cursor/skills
 ln -sfn /data/apps/code-path-skill/skills/code-path ~/.cursor/skills/code-path
-ls -la ~/.cursor/skills/code-path/SKILL.md
 ```
 
-**Project-only** (from a repo root):
+Same chat protocol: agent shows one hop; you reply `n` / `b` / …
 
-```bash
-mkdir -p .cursor/skills
-ln -sfn /data/apps/code-path-skill/skills/code-path .cursor/skills/code-path
-```
-
-**Use it:** in Cursor Agent / Agent CLI, say:
-
-> Walk me through the code path for \<feature\> using the code-path skill
-
-Or: `/code-path` then describe the feature.
-
-Restart the Cursor agent session if the skill does not show up.
-
----
-
-## 2. Claude Code
-
-**Personal (all projects):**
-
-```bash
-mkdir -p ~/.claude/skills
-ln -sfn /data/apps/code-path-skill/skills/code-path ~/.claude/skills/code-path
-ls -la ~/.claude/skills/code-path/SKILL.md
-```
-
-**Project-only** (from a repo root):
-
-```bash
-mkdir -p .claude/skills
-ln -sfn /data/apps/code-path-skill/skills/code-path .claude/skills/code-path
-```
-
-**Use it:**
-
-```text
-/code-path
-```
-
-or:
-
-> Trace what happens when \<event\> — use the code-path skill
-
-Restart Claude Code if needed after installing.
-
----
-
-## 3. Codex (OpenAI)
-
-Official skill locations ([Codex skills docs](https://developers.openai.com/codex/skills)):
-
-| Scope | Path |
-|-------|------|
-| User (all repos) | `~/.agents/skills/` |
-| Repo | `.agents/skills/` at the repo root |
-
-**Personal (recommended):**
+## 3. Codex
 
 ```bash
 mkdir -p ~/.agents/skills
 ln -sfn /data/apps/code-path-skill/skills/code-path ~/.agents/skills/code-path
-ls -la ~/.agents/skills/code-path/SKILL.md
 ```
 
-**Project-only** (from a repo root):
+Invoke `$code-path` / `/skills`. Same `n`/`b`/`i`/`o`/`s`/`q` loop.
 
-```bash
-mkdir -p .agents/skills
-ln -sfn /data/apps/code-path-skill/skills/code-path .agents/skills/code-path
-```
-
-Codex supports symlinked skill folders. If a symlink does not appear in your Codex build, copy instead:
-
-```bash
-rm -f ~/.agents/skills/code-path
-cp -a /data/apps/code-path-skill/skills/code-path ~/.agents/skills/code-path
-```
-
-**Use it:** in Codex CLI / IDE:
-
-- Explicit: `$code-path` or `/skills` and pick `code-path`
-- Or: “Walk me through the code path for …”
-
-Restart Codex if the skill list does not update.
-
-**Optional — disable without deleting** (`~/.codex/config.toml`):
-
-```toml
-[[skills.config]]
-path = "/home/YOU/.agents/skills/code-path/SKILL.md"
-enabled = false
-```
-
----
-
-## 4. Install all three at once
+## 4. Install all three + Claude commands
 
 ```bash
 REPO=/data/apps/code-path-skill
-SKILL="$REPO/skills/code-path"
-
 cd "$REPO" && npm install && npm link
-
-mkdir -p ~/.cursor/skills ~/.claude/skills ~/.agents/skills
-ln -sfn "$SKILL" ~/.cursor/skills/code-path
-ln -sfn "$SKILL" ~/.claude/skills/code-path
-ln -sfn "$SKILL" ~/.agents/skills/code-path
-
-echo "CLI:"; command -v codepath
-echo "Skills:"
-ls -la ~/.cursor/skills/code-path/SKILL.md
-ls -la ~/.claude/skills/code-path/SKILL.md
-ls -la ~/.agents/skills/code-path/SKILL.md
+mkdir -p ~/.cursor/skills ~/.claude/skills ~/.agents/skills ~/.claude/commands
+ln -sfn "$REPO/skills/code-path" ~/.cursor/skills/code-path
+ln -sfn "$REPO/skills/code-path" ~/.claude/skills/code-path
+ln -sfn "$REPO/skills/code-path" ~/.agents/skills/code-path
+for c in code-path cp-n cp-b cp-i cp-o cp-s cp-q; do
+  ln -sfn "$REPO/commands/$c.md" ~/.claude/commands/$c.md
+done
 ```
 
----
+## Path quality reminder
 
-## Slash command (Claude Code) — recommended
-
-Skills alone are easy for the model to “summarize and finish.” A **slash command** forces the interactive loop.
-
-```bash
-mkdir -p ~/.claude/commands
-ln -sfn /data/apps/code-path-skill/commands/code-path.md ~/.claude/commands/code-path.md
-```
-
-In a project:
-
-```bash
-mkdir -p .claude/commands
-ln -sfn /data/apps/code-path-skill/commands/code-path.md .claude/commands/code-path.md
-```
-
-Then in Claude:
-
-```text
-/code-path brands import when Excel is uploaded
-```
-
-You should get **one hop** and an **AskUserQuestion** picker (Next / Prev / …). If you only get a wall of files, the session is still on an old prompt — start a **new** Claude session and use `/code-path`.
-
----
-
-## Agent note (Claude / Cursor / Codex)
-
-**Default UX is in-session:** the skill shows one hop at a time in chat and uses **AskUserQuestion** (Claude) / AskQuestion (Cursor) / numbered choices (Codex) for Next / Prev / More context / Branch / Done.
-
-Claude cannot host a raw-mode TUI inside the tool loop — that is why other plugins feel “interactive inside Claude”: they use structured questions, not an embedded terminal.
-
-`codepath view` remains available when you explicitly want an external terminal TUI.
-
-`codepath show <file> --step s1` prints a single hop for the agent to display.
-
----
-
-## Quick reference
-
-| Agent | Personal skills dir | Project skills dir | Invoke |
-|-------|---------------------|--------------------|--------|
-| **Cursor** | `~/.cursor/skills/` | `.cursor/skills/` | Ask for code-path / `/code-path` |
-| **Claude Code** | `~/.claude/skills/` | `.claude/skills/` | `/code-path` or natural language |
-| **Codex** | `~/.agents/skills/` | `.agents/skills/` | `$code-path` / `/skills` |
-
-Skill source (single copy): `skills/code-path/SKILL.md` in this repo.
+The skill must build a **spine** (entry ↔ terminal effect via forward+backward). Noise calls are `detail` and only appear if you type `i`.

@@ -16,6 +16,19 @@ export const StepSchema = z
     note: z.string().min(1),
     next: z.array(z.string().min(1)).optional(),
     branches: z.array(BranchSchema).optional(),
+    /** Process-linear hop vs optional detail (step-into only). */
+    role: z.enum(["spine", "detail"]).optional().default("spine"),
+    kind: z
+      .enum(["statement", "call", "branch", "effect"])
+      .optional()
+      .default("statement"),
+    /** Line that is "about to execute" in the process spine. */
+    highlightLine: z.number().int().min(1).optional(),
+    /** Required for spine hops when present in v2 docs; encouraged always. */
+    whySpine: z.string().min(1).optional(),
+    stepOver: z.string().min(1).optional(),
+    stepInto: z.string().min(1).optional(),
+    stepOut: z.string().min(1).optional(),
   })
   .superRefine((step, ctx) => {
     if (step.endLine < step.startLine) {
@@ -23,6 +36,24 @@ export const StepSchema = z
         code: z.ZodIssueCode.custom,
         message: `endLine (${step.endLine}) must be >= startLine (${step.startLine})`,
         path: ["endLine"],
+      });
+    }
+    if (
+      step.highlightLine !== undefined &&
+      (step.highlightLine < step.startLine ||
+        step.highlightLine > step.endLine)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `highlightLine (${step.highlightLine}) must be within startLine..endLine`,
+        path: ["highlightLine"],
+      });
+    }
+    if (step.role === "spine" && !step.whySpine && !step.note) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `spine hop should include whySpine (or note)`,
+        path: ["whySpine"],
       });
     }
   });
@@ -61,6 +92,22 @@ export function parsePathDocument(data: unknown): {
   return { doc: parsed.data, issues: [] };
 }
 
+function checkRef(
+  ids: Set<string>,
+  stepId: string,
+  field: string,
+  ref: string | undefined,
+  issues: ValidationIssue[],
+): void {
+  if (!ref) return;
+  if (!ids.has(ref)) {
+    issues.push({
+      path: `steps[id=${stepId}].${field}`,
+      message: `unknown ${field} step id "${ref}"`,
+    });
+  }
+}
+
 export function checkGraphIntegrity(doc: PathDocument): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const ids = new Set(doc.steps.map((s) => s.id));
@@ -76,12 +123,7 @@ export function checkGraphIntegrity(doc: PathDocument): ValidationIssue[] {
     seen.add(step.id);
 
     for (const nextId of step.next ?? []) {
-      if (!ids.has(nextId)) {
-        issues.push({
-          path: `steps[id=${step.id}].next`,
-          message: `unknown next step id "${nextId}"`,
-        });
-      }
+      checkRef(ids, step.id, "next", nextId, issues);
     }
 
     for (const [i, branch] of (step.branches ?? []).entries()) {
@@ -92,7 +134,20 @@ export function checkGraphIntegrity(doc: PathDocument): ValidationIssue[] {
         });
       }
     }
+
+    checkRef(ids, step.id, "stepOver", step.stepOver, issues);
+    checkRef(ids, step.id, "stepInto", step.stepInto, issues);
+    checkRef(ids, step.id, "stepOut", step.stepOut, issues);
   }
 
   return issues;
+}
+
+/** Spine hops in document order (for Paso X/Y). */
+export function spineSteps(doc: PathDocument): Step[] {
+  return doc.steps.filter((s) => (s.role ?? "spine") === "spine");
+}
+
+export function effectiveStepOver(step: Step): string | undefined {
+  return step.stepOver ?? step.next?.[0];
 }

@@ -1,5 +1,10 @@
 import chalk from "chalk";
-import type { PathDocument, Step } from "./schema.js";
+import {
+  effectiveStepOver,
+  spineSteps,
+  type PathDocument,
+  type Step,
+} from "./schema.js";
 import {
   extractSnippet,
   readFileLines,
@@ -25,19 +30,30 @@ export function showStep(
   repoRoot: string,
   context: number,
 ): void {
-  const index = doc.steps.findIndex((s) => s.id === step.id) + 1;
-  const total = doc.steps.length;
+  const spine = spineSteps(doc);
+  const spineIndex = spine.findIndex((s) => s.id === step.id);
+  const role = step.role ?? "spine";
+  const progress =
+    spineIndex >= 0
+      ? `Paso ${spineIndex + 1}/${spine.length}`
+      : `detail · ${step.id}`;
+
   const loc = `${step.file}:${step.startLine}-${step.endLine}`;
   const symbol = step.symbol ? `  ·  ${step.symbol}` : "";
+  const highlight = step.highlightLine ?? step.startLine;
 
-  console.log(chalk.bold(`${doc.title}  ·  Step ${index}/${total}`));
+  console.log(chalk.bold(`[${progress}] ${role} · ${step.title}`));
   console.log(chalk.cyan.bold(loc) + chalk.cyan(symbol));
-  console.log(chalk.bold(step.title));
-  console.log(step.note);
-
-  if (step.next && step.next.length > 0) {
-    console.log(chalk.dim(`next: ${step.next.join(", ")}`));
+  if (step.whySpine) {
+    console.log(chalk.dim(`why: ${step.whySpine}`));
+  } else {
+    console.log(step.note);
   }
+
+  const over = effectiveStepOver(step);
+  if (over) console.log(chalk.dim(`stepOver→${over}`));
+  if (step.stepInto) console.log(chalk.dim(`stepInto→${step.stepInto}`));
+  if (step.stepOut) console.log(chalk.dim(`stepOut→${step.stepOut}`));
   if (step.branches && step.branches.length > 0) {
     console.log(
       chalk.yellow(
@@ -59,13 +75,31 @@ export function showStep(
     );
     const width = String(snippet.sliceEnd).length;
     for (const row of snippet.lines) {
-      const mark = row.focused ? chalk.green("▶") : " ";
+      const isHighlight = row.lineNo === highlight;
+      const inRange =
+        row.lineNo >= step.startLine && row.lineNo <= step.endLine;
+      const mark = isHighlight
+        ? chalk.green("▶")
+        : inRange
+          ? chalk.green("·")
+          : " ";
       const num = chalk.dim(String(row.lineNo).padStart(width, " "));
-      const text = row.focused ? row.text : chalk.dim(row.text);
+      const text = isHighlight
+        ? chalk.bold(row.text)
+        : inRange
+          ? row.text
+          : chalk.dim(row.text);
       console.log(`${mark} ${num} │ ${text}`);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.log(chalk.red(`(could not read file: ${message})`));
   }
+
+  console.log("");
+  console.log(
+    chalk.bold(
+      "> n next · b back · i into · o out · s over · q quit",
+    ),
+  );
 }

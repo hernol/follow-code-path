@@ -1,0 +1,16 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "$docs": "https://code.claude.com/docs/en/keybindings",
+  "bindings": [
+    {
+      "context": "Chat",
+      "bindings": {
+        "f10": "command:cp-n",
+        "shift+f10": "command:cp-b",
+        "f11": "command:cp-i",
+        "shift+f11": "command:cp-o",
+        "f8": "command:cp-s"
+      }
+    }
+  ]
+}

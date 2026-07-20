@@ -1,138 +1,61 @@
 # codepath
 
-Interactive **code path** walker. Inside Claude/Cursor/Codex the default is hop-by-hop in the session (**AskUserQuestion** after every step). Optional external TUI via `codepath view`.
+Sequential **feature-path debugger** in the agent chat: map a process spine, show one hop, wait for `n` / `b` / `i` / `o` / `s` / `q`. No AskUserQuestion. No external TUI by default.
 
-See [SPEC.md](SPEC.md). Install details: [skills/INSTALL.md](skills/INSTALL.md).
+See [SPEC.md](SPEC.md). Install: [skills/INSTALL.md](skills/INSTALL.md).
 
-### Claude: use the slash command
+## Claude (recommended)
 
 ```bash
-mkdir -p ~/.claude/commands
-ln -sfn "$(pwd)/commands/code-path.md" ~/.claude/commands/code-path.md
+cd /path/to/follow-code-path   # or code-path-skill
+npm install && npm link
+
+mkdir -p ~/.claude/skills ~/.claude/commands
+ln -sfn "$(pwd)/skills/code-path" ~/.claude/skills/code-path
+for c in code-path cp-n cp-b cp-i cp-o cp-s cp-q; do
+  ln -sfn "$(pwd)/commands/$c.md" ~/.claude/commands/$c.md
+done
 ```
 
-Then: `/code-path <what to trace>` — expect one hop + a Next/Prev picker, not a full dump.
+New Claude session, then:
 
-## Install
-
-**Full step-by-step for Cursor, Claude Code, and Codex:** [skills/INSTALL.md](skills/INSTALL.md)
-
-### CLI (once)
-
-```bash
-npm install
-npm link          # exposes the `codepath` binary
-codepath --help
+```text
+/code-path place order checkout
 ```
 
-Node.js ≥ 20 required.
+Expect **one hop** and:
 
-### Skills (all three agents)
+```text
+> n next · b back · i into · o out · s over · q quit
+```
+
+Reply with `n` (or `/cp-n`). Optional keybindings: copy [examples/keybindings.code-path.json](examples/keybindings.code-path.json) into `~/.claude/keybindings.json` (merge carefully). Note: `"f10": "n\n"` is **invalid** — only `command:cp-n` style works.
+
+## Install (all agents)
+
+Details: [skills/INSTALL.md](skills/INSTALL.md).
 
 ```bash
+npm install && npm link
 REPO="$(pwd)/skills/code-path"
 mkdir -p ~/.cursor/skills ~/.claude/skills ~/.agents/skills
-ln -sfn "$REPO" ~/.cursor/skills/code-path    # Cursor
-ln -sfn "$REPO" ~/.claude/skills/code-path    # Claude Code
-ln -sfn "$REPO" ~/.agents/skills/code-path    # Codex (user scope)
+ln -sfn "$REPO" ~/.cursor/skills/code-path
+ln -sfn "$REPO" ~/.claude/skills/code-path
+ln -sfn "$REPO" ~/.agents/skills/code-path
 ```
-
-| Agent | Personal | Project | Invoke |
-|-------|----------|---------|--------|
-| Cursor | `~/.cursor/skills/` | `.cursor/skills/` | “use code-path” / `/code-path` |
-| Claude Code | `~/.claude/skills/` | `.claude/skills/` | `/code-path` |
-| Codex | `~/.agents/skills/` | `.agents/skills/` | `$code-path` / `/skills` |
-
-## Quick start
-
-Validate and print the bundled sample:
-
-```bash
-codepath validate examples/sample-path.json --check-files
-codepath print examples/sample-path.json
-codepath view examples/sample-path.json    # interactive (opens external terminal if no TTY)
-codepath view --here examples/sample-path.json  # force current terminal
-```
-
-Agent shells (Claude/Cursor/Codex) typically have no TTY. Plain `codepath view` still works: it spawns kitty/gnome-terminal/Terminal.app/etc. Set `CODEPATH_TERMINAL='kitty -e {cmd}'` if auto-detect fails.
-
-```bash
-codepath init "Checkout place order" --query "What happens on Place Order?"
-# writes .codepath/checkout-place-order.json
-```
-
-## How agents use it
-
-1. You ask: “Walk me through what happens when a user clicks Place Order.”
-2. The **code-path** skill searches the repo and writes `.codepath/<slug>.json`.
-3. It validates, then **walks hop-by-hop inside the chat** (AskUserQuestion / choices: Next, Prev, More context, Branch, Done).
-4. Optional: `codepath view` opens an external TUI if you ask for a terminal UI.
-
-### Example Path Document shape
-
-```json
-{
-  "version": 1,
-  "title": "Checkout: place order",
-  "query": "What happens when a user clicks Place Order?",
-  "repoRoot": ".",
-  "steps": [
-    {
-      "id": "s1",
-      "title": "UI click handler",
-      "file": "src/components/Checkout.tsx",
-      "startLine": 88,
-      "endLine": 104,
-      "symbol": "onPlaceOrder",
-      "note": "Validates cart then POSTs to the API.",
-      "next": ["s2"]
-    }
-  ]
-}
-```
-
-Schema: [schemas/path-document.schema.json](schemas/path-document.schema.json).
-
-## TUI keybindings
-
-| Key | Action |
-|-----|--------|
-| `j` / `↓` / `n` | Next hop |
-| `k` / `↑` / `p` | Previous hop |
-| `+` / `-` | Expand / shrink context |
-| `c` | Toggle extra context |
-| `o` | Open file at line in editor |
-| `b` | Choose a branch (when present) |
-| `g` | Jump to step by number |
-| `y` | Yank `file:line` to clipboard |
-| `q` / `Esc` | Quit |
-
-Editor resolution: `CODEPATH_EDITOR` (supports `{file}` / `{line}`) → `cursor` → `code` → `$EDITOR`.
 
 ## CLI
 
-```
-codepath validate <file> [--check-files] [--repo-root <dir>]
-codepath print    <file> [--repo-root <dir>] [-c <n>]
-codepath view     <file> [--repo-root <dir>] [-c <n>]
-codepath init     [title] [-q <query>] [--stdout]
-```
-
-## Repo layout
-
-```
-SPEC.md
-schemas/path-document.schema.json
-examples/sample-path.json
-examples/fixture-repo/          # tiny fake app for the sample
-src/                            # codepath CLI + TUI
-skills/code-path/SKILL.md       # shared Cursor / Claude skill
-```
-
-## Development
-
 ```bash
-npm run dev -- validate examples/sample-path.json --check-files
-npm run build
-npm test
+codepath validate examples/sample-path.json --check-files
+codepath show examples/sample-path.json --step s1 -c 2
+codepath print examples/sample-path.json
+codepath view examples/sample-path.json    # optional legacy TUI
 ```
+
+## How the walk works
+
+1. Agent builds `.codepath/<slug>.json` with a **spine** (entry↔effect) and optional **detail** hops.
+2. Shows one hop (`highlightLine` marked).
+3. You send `n` / `b` / `i` / `o` / `s` / `q`.
+4. Repeats until `q`.

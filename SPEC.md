@@ -127,19 +127,22 @@ See [`examples/sample-path.json`](examples/sample-path.json).
 
 ## 7. Presentation modes
 
-### In-session walk (default for agents)
+### In-session chat debugger (default)
 
-Primary UX inside Claude Code / Cursor / Codex:
+Primary UX inside Claude Code (also Cursor/Codex with the same skill):
 
-1. Show one hop (header + note + code).
-2. Ask the user what to do next via **AskUserQuestion** (Claude), **AskQuestion** (Cursor), or numbered chat options (Codex).
-3. Repeat until Done.
+1. Map a **process spine** (forward from entry + backward from effect).
+2. Show **one hop** (snippet + `highlightLine`).
+3. Print exactly: `> n next · b back · i into · o out · s over · q quit`
+4. **Stop** and wait for the user’s chat message (or `/cp-n` …). No AskUserQuestion.
 
-This is how interactive plugins work inside Claude: structured choices in the session, not an embedded raw-mode TUI.
+Controls: `n` = `stepOver` (spine), `b` = history back, `i` = `stepInto` (detail), `o` = `stepOut`, `s` = over, `q` = quit.
 
-### External TUI (optional)
+Optional Claude keybindings invoke slash commands only (schema-valid), e.g. `"f10": "command:cp-n"`. Raw `"n\n"` injection is **not** supported by Claude Code.
 
-`codepath view` for a classic terminal walker. When stdin is not a TTY, spawn an external emulator unless `--here` is set.
+### External TUI (optional legacy)
+
+`codepath view` for a classic terminal walker. When stdin is not a TTY, spawn an external emulator unless `--here` is set. Not the default agent UX.
 
 ```
 codepath │ Checkout: place order                    Step 3/12
@@ -159,22 +162,18 @@ Validates payload, loads cart, then persists the order row.
 j/n next  k/p prev  +/- context  c more  o open  b branch  g jump  y yank  q quit
 ```
 
-- Focused range is marked (e.g. `▶` or reverse video).
-- Context lines outside the range are dimmer.
-- Footer always shows bindings.
-
-### Keybindings (v1)
+### TUI keybindings (view only)
 
 | Key | Action |
 |-----|--------|
-| `j` / `↓` / `n` | Follow default `next` (or history forward) |
-| `k` / `↑` / `p` | Previous hop in visit history |
-| `+` / `-` | Expand / shrink context lines around the range |
-| `c` | Toggle extra context mode (larger default context) |
-| `o` | Open `file:startLine` in editor |
-| `b` | Branch picker when `branches` is non-empty |
-| `g` | Outline / jump to step by number |
-| `y` | Copy `file:startLine` to clipboard when possible |
+| `j` / `↓` / `n` | Next hop |
+| `k` / `↑` / `p` | Previous hop |
+| `+` / `-` | Expand / shrink context |
+| `c` | Extra context |
+| `o` | Open in editor |
+| `b` | Branch picker |
+| `g` | Outline jump |
+| `y` | Yank `file:line` |
 | `q` / `Esc` | Quit |
 
 ### Editor open order
@@ -187,7 +186,7 @@ j/n next  k/p prev  +/- context  c more  o open  b branch  g jump  y yank  q qui
 
 ### TTY behavior
 
-- In-session walk does not need a TTY.
+- In-session chat walk does not need a TTY.
 - `codepath view` without a TTY opens an external terminal by default; use `--here` to require the current TTY.
 
 ## 8. CLI surface
@@ -224,12 +223,11 @@ Install:
 
 ### Agent steps
 
-1. Clarify entry point / success vs error path if ambiguous.
-2. Search and read code; reconstruct the **actual** control/call path.
-3. Build steps with real `file` / line ranges / `symbol` / `note`.
-4. Write to `.codepath/<slug>.json`; `codepath validate --check-files`.
-5. **Walk in-session**: show one hop, then AskUserQuestion (Next/Prev/More context/Branch/Done).
-6. Only if the user asks for a terminal UI: `codepath view`.
+1. Clarify entry / effect if ambiguous.
+2. Reconstruct spine with forward+backward; mark noise as `detail`.
+3. Write `.codepath/<slug>.json`; validate.
+4. Show one hop; wait for `n`/`b`/`i`/`o`/`s`/`q` (or `/cp-*`).
+5. Only if asked for a terminal UI: `codepath view`.
 
 ### Triggers
 

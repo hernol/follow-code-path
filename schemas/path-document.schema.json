@@ -77,11 +77,47 @@
         "next": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
-          "description": "Default successor step ids."
+          "description": "Legacy default successor step ids (prefer stepOver)."
         },
         "branches": {
           "type": "array",
           "items": { "$ref": "#/$defs/branch" }
+        },
+        "role": {
+          "type": "string",
+          "enum": ["spine", "detail"],
+          "default": "spine",
+          "description": "spine = process-linear hop; detail = only via step into."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["statement", "call", "branch", "effect"],
+          "default": "statement"
+        },
+        "highlightLine": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Process 'next line to execute' within the range."
+        },
+        "whySpine": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this hop belongs on the process spine."
+        },
+        "stepOver": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Next spine hop id (debugger step-over / n)."
+        },
+        "stepInto": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional detail hop id (debugger step-into / i)."
+        },
+        "stepOut": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Caller spine hop id (debugger step-out / o)."
         }
       }
     },

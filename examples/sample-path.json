@@ -11,8 +11,13 @@
       "file": "examples/fixture-repo/Checkout.tsx",
       "startLine": 5,
       "endLine": 21,
+      "highlightLine": 10,
       "symbol": "onPlaceOrder",
+      "role": "spine",
+      "kind": "statement",
       "note": "User clicks Place Order; client validates the cart id then POSTs to the API.",
+      "whySpine": "Entry: user intent starts here and issues the HTTP request.",
+      "stepOver": "s2",
       "next": ["s2"]
     },
     {
@@ -21,8 +26,15 @@
       "file": "examples/fixture-repo/orders-route.ts",
       "startLine": 13,
       "endLine": 20,
+      "highlightLine": 19,
       "symbol": "postOrders",
+      "role": "spine",
+      "kind": "statement",
       "note": "API route receives the request and delegates to createOrder.",
+      "whySpine": "Server entry on the place-order request path.",
+      "stepOver": "s3",
+      "stepInto": "s5",
+      "stepOut": "s1",
       "next": ["s3"],
       "branches": [
         {
@@ -37,8 +49,15 @@
       "file": "examples/fixture-repo/create-order.ts",
       "startLine": 12,
       "endLine": 24,
+      "highlightLine": 18,
       "symbol": "createOrder",
-      "note": "Parses body, loads cart, persists order row, returns the order DTO.",
+      "role": "spine",
+      "kind": "call",
+      "note": "Parses body, then persists the order.",
+      "whySpine": "Business step that turns the request into a persisted order.",
+      "stepOver": "s4",
+      "stepInto": "s6",
+      "stepOut": "s2",
       "next": ["s4"],
       "branches": [
         {
@@ -53,8 +72,13 @@
       "file": "examples/fixture-repo/orders-db.ts",
       "startLine": 8,
       "endLine": 11,
+      "highlightLine": 9,
       "symbol": "insertOrder",
-      "note": "Database insert for the new order; end of the happy path."
+      "role": "spine",
+      "kind": "effect",
+      "note": "Database insert for the new order; end of the happy path.",
+      "whySpine": "Terminal effect of place-order: the order row is written.",
+      "stepOut": "s3"
     },
     {
       "id": "s5",
@@ -62,8 +86,12 @@
       "file": "examples/fixture-repo/orders-route.ts",
       "startLine": 23,
       "endLine": 25,
+      "highlightLine": 24,
       "symbol": "unauthorized",
-      "note": "Branch: missing/invalid session returns 401 without calling createOrder."
+      "role": "detail",
+      "kind": "branch",
+      "note": "Branch: missing session returns 401 — not on the happy spine.",
+      "stepOut": "s2"
     },
     {
       "id": "s6",
@@ -71,8 +99,12 @@
       "file": "examples/fixture-repo/create-order.ts",
       "startLine": 39,
       "endLine": 43,
+      "highlightLine": 42,
       "symbol": "validationError",
-      "note": "Branch: schema parse failure maps to a 400 response."
+      "role": "detail",
+      "kind": "branch",
+      "note": "Branch: schema parse failure — detail only via into.",
+      "stepOut": "s3"
     }
   ]
 }

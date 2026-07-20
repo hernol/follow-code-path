@@ -1,78 +1,76 @@
 ---
 name: code-path
 description: >-
-  Interactively walk a feature's static code path hop-by-hop inside this session
-  using AskUserQuestion after every step. Use for code path, call path, what
-  happens when, trace feature, or /code-path.
-allowed-tools: AskUserQuestion, Read, Write, Bash, Grep, Glob
+  Sequential feature-path debugger in chat: map a process spine, show one hop,
+  wait for n/b/i/o/s/q. Use for code path, call path, what happens when, trace
+  feature, or /code-path. No AskUserQuestion. No external TUI by default.
+allowed-tools: Read Write Bash Grep Glob
 ---
 
-# Code Path (in-session walk)
+# Code Path — sequential chat debugger
 
-You are running an **interactive walkthrough inside Claude**. Not a dump. Not an external TUI.
+Native Claude workflow: **one hop → stop → wait for `n`/`b`/`i`/`o`/`s`/`q`**.
 
-## Hard rules (non-negotiable)
+Do **not** use AskUserQuestion. Do **not** open `codepath view` unless the user explicitly asks for a TUI.
 
-1. After the Path Document exists and validates, show **exactly one hop**, then **immediately** call **AskUserQuestion**.
-2. **Never** show hop N+1 until AskUserQuestion returns an answer for hop N.
-3. **Never** dump the full path (`codepath print` of everything, long multi-file paste, or a prose tour of all steps) unless the user chooses **Done** and then asks for a summary.
-4. **Never** end your turn after only writing `.codepath/*.json` — the turn must end on an **AskUserQuestion** (or Done summary after they quit).
-5. **Do not** run `codepath view` unless the user explicitly asks for a terminal/TUI.
+## Hard rules
 
-If you catch yourself about to list every file in the path: stop. Show only the current hop + AskUserQuestion.
+1. After mapping, show **exactly one** hop per assistant turn.
+2. End every hop turn with this exact control line:
+   `> n next · b back · i into · o out · s over · q quit`
+3. **STOP.** Do not show the next hop until the user sends a control message (or `/cp-n` etc.).
+4. Never dump the full path. Never summarize all files in one reply during the walk.
+5. `n` follows the **spine** (`stepOver`), not every function call in the snippet.
 
-## Phase A — Build (silent prep)
+## Phase A — Map (forward + backward)
 
-1. Find the real entry → call/control chain for the user's feature/event.
-2. Write `.codepath/<slug>.json` (`version` 1, `title`, `query`, `repoRoot` `"."`, `steps` with `id`, `title`, `file`, `startLine`, `endLine`, `note`, optional `symbol`/`next`/`branches`).
-3. Run: `codepath validate .codepath/<slug>.json --check-files` and fix until OK.
+1. Find the **entry** (user event / route / handler).
+2. Find the **terminal effect** (DB write, HTTP response body, meaningful side-effect).
+3. Trace **forward** from entry and **backward** from effect; the **spine** is the aligned chain connecting them.
+4. Calls that are not on that chain → `role: "detail"` (reachable only via `i`). Typical noise: logging, metrics, trivial getters, shared formatters, stdlib — unless they *are* the effect.
+5. Write `.codepath/<slug>.json` with hops including:
+   - `role`: `spine` | `detail`
+   - `kind`: `statement` | `call` | `branch` | `effect`
+   - `highlightLine`: next process line inside the range
+   - `whySpine`: why this hop is on the spine (spine hops)
+   - `stepOver` / `stepInto` / `stepOut` as applicable
+6. Validate: `codepath validate .codepath/<slug>.json --check-files`
 
-## Phase B — Interactive walk (required)
+## Phase B — Interactive loop
 
-Start at the first step. Keep a visit history for Prev.
+Keep visit history for `b`.
 
-### Each hop
+### Render format (each hop)
 
-1. Render **only this hop** in the message:
-   - `Step N/M` · `file:startLine-endLine` · symbol
-   - `note` (one short paragraph)
-   - Code for that range — prefer:
-     ```bash
-     codepath show .codepath/<slug>.json --step <id> -c 3
-     ```
-     and include that output (or Read the file range yourself).
-2. **Immediately** call AskUserQuestion:
+```
+[Paso X/Y] spine · <title>
+<file>:<start>-<end>  ·  <symbol>
+why: <whySpine or note>
 
-**header:** `Code path` (≤12 chars)
+<<snippet: prefer `codepath show .codepath/<slug>.json --step <id> -c 2` (≤ ~10 focused lines); ▶ = highlightLine>>
 
-**question:** `What next? (step N/M — <short title>)`
+> n next · b back · i into · o out · s over · q quit
+```
 
-**multiSelect:** false
+Then **stop**.
 
-**options** (omit ones that do not apply):
+### Control messages
 
-| label | description |
-|-------|-------------|
-| Next | Follow the default next hop |
-| Prev | Go back one hop |
-| More context | Re-show this hop with more surrounding lines |
-| Open file | Focus/open `file:startLine` |
-| Branch: \<label\> | Only if this step has that branch — one option per branch |
-| Outline | List steps and jump to a number |
-| Done | End the walkthrough |
+| User says | Action |
+|-----------|--------|
+| `n` or `/cp-n` | Go to `stepOver` (or `next[0]`). Skip `detail`. |
+| `b` or `/cp-b` | Previous hop in visit history. |
+| `i` or `/cp-i` | Go to `stepInto` if set; else say nothing to into. |
+| `o` or `/cp-o` | Go to `stepOut` if set. |
+| `s` or `/cp-s` | Step over call: same as `n` (do not enter detail). |
+| `q` or `/cp-q` | End: one-line spine `s1 → s2 → …` + JSON path. Stop. |
 
-3. Handle the answer, then either re-show the same hop, move, or finish. After every move (except Done), AskUserQuestion again.
+If the user types anything else mid-walk, briefly remind the control line and stay on the current hop.
 
-### Done
+## Optional TUI
 
-When they choose Done: one-line spine `s1 → s2 → …`, path to the JSON, stop asking.
+Only if asked: `codepath view .codepath/<slug>.json`
 
-## Phase C — Optional TUI
+## Keybindings note
 
-Only if they ask: `codepath view .codepath/<slug>.json`
-
-## Anti-patterns
-
-- Summarizing the whole feature flow in one reply “for convenience”
-- “Here’s the path” with 5+ file sections and no AskUserQuestion
-- Telling the user to run commands instead of walking in-session
+Claude keybindings **cannot** inject `"n\n"`. Valid shortcuts use slash commands, e.g. `"f10": "command:cp-n"`. See INSTALL.md.
