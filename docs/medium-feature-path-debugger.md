@@ -103,14 +103,12 @@ why: Entry: user intent starts here and issues the HTTP request.
 
 You type:
 
-| Key | Meaning |
-|-----|---------|
-| `n` | Next spine hop (step over at process level) |
-| `b` | Back |
-| `i` | Into a detail hop (if any) |
-| `o` | Out |
-| `s` | Over (don’t into) |
-| `q` | Quit + one-line spine summary |
+- **`n`** — next spine hop (step over at process level)
+- **`b`** — back
+- **`i`** — into a detail hop (if any)
+- **`o`** — out
+- **`s`** — over (don’t into)
+- **`q`** — quit + one-line spine summary
 
 Or use `/cp-n`, `/cp-b`, … if you wire keybindings to those slash commands.
 
