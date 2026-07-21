@@ -4,6 +4,12 @@
 
 ---
 
+If you’re not a full vibe coder — if you still write most of the code yourself and debug your apps the old-fashioned way — great. Seriously. **This post is not for you.**
+
+This is for people who already let agents ship large chunks of the app, and then stare at a feature they “own” without knowing which files the request actually walks through.
+
+---
+
 ## The problem nobody warns you about
 
 I’ve been letting agents write a lot of production code. Cursor. Claude. Codex. They’re fast. They’re often right.
